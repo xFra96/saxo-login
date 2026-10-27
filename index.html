@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Login Saxo</title>
+<!-- Saxo sends the phone here after the demo login (redirect URI of the app on developer.saxo).
+     The page passes the code to the Telegram bot as /start login_<code>: the bot exchanges it
+     with the app secret, which never leaves the PC, so the code alone is useless to anyone else.
+     No external scripts, nothing is sent anywhere but to Telegram. -->
+<style>
+  :root { color-scheme: light dark; --bg: #f6f7f9; --fg: #1b1f24; --muted: #5b6470; --accent: #2a7ae2; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #15181c; --fg: #e8eaed; --muted: #9aa3ad; --accent: #5d9cf0; } }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 17px/1.5 system-ui, sans-serif; }
+  main { max-width: 32rem; margin: 0 auto; padding: 2rem 16px; }
+  a.button, button { display: block; width: 100%; box-sizing: border-box; margin: 1rem 0; padding: .9rem;
+    border: 0; border-radius: .6rem; background: var(--accent); color: #fff; font: inherit; text-align: center;
+    text-decoration: none; }
+  button.secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+  code { word-break: break-all; }
+  .muted { color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="title">Login Saxo</h1>
+  <p id="text">Un momento…</p>
+  <a class="button" id="open" hidden>Apri Telegram</a>
+  <button class="secondary" id="copy" hidden>Copia il comando /login</button>
+  <p class="muted" id="manual" hidden></p>
+</main>
+<script>
+  var q = new URLSearchParams(location.search);
+  var code = q.get("code") || "", state = q.get("state") || "", error = q.get("error");
+  var bot = state.indexOf("tg.") === 0 ? state.slice(3) : "";
+  var $ = function (id) { return document.getElementById(id); };
+  history.replaceState(null, "", location.pathname);    // the code out of the address bar
+  if (error || !code) {
+    $("title").textContent = "Login non riuscito";
+    $("text").textContent = "Saxo non ha mandato il codice" + (error ? " (" + error + ")" : "") +
+      ". Scrivi /login al bot per avere un link nuovo.";
+  } else {
+    var command = "/login " + code;
+    $("manual").hidden = false;
+    $("manual").innerHTML = "Se Telegram non si apre, manda al bot questo comando: <code></code>";
+    $("manual").querySelector("code").textContent = command;
+    $("copy").hidden = false;
+    $("copy").onclick = function () {
+      navigator.clipboard.writeText(command).then(function () { $("copy").textContent = "Copiato"; });
+    };
+    if (/^[A-Za-z0-9_]{5,32}$/.test(bot) && /^[A-Za-z0-9_-]{1,58}$/.test(code)) {
+      var payload = "login_" + code;
+      $("title").textContent = "Login fatto";
+      $("text").textContent = "Ti riporto su Telegram: il codice arriva al bot da solo. " +
+        "Se vedi il pulsante Avvia, toccalo.";
+      $("open").href = "https://t.me/" + bot + "?start=" + payload;
+      $("open").hidden = false;
+      location.href = "tg://resolve?domain=" + bot + "&start=" + payload;
+    } else {
+      $("title").textContent = "Login fatto";
+      $("text").textContent = "Copia il comando qui sotto e mandalo al bot su Telegram entro un paio di minuti.";
+    }
+  }
+</script>
+</body>
+</html>
